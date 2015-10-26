@@ -1,5 +1,4 @@
 #include "MainGameScene.h"
-#include "Setting.h"
 USING_NS_CC;
 
 using namespace cocos2d;
@@ -34,7 +33,7 @@ bool MainGame::init()
 	auto bg = cocos2d::LayerColor::create(Color4B(255, 255, 255, 255));
 	this->addChild(bg, 0);
 
-	CCSpriteBatchNode *batchNodeLine = CCSpriteBatchNode::create("line1.png", 2000);
+	CCSpriteBatchNode *batchNodeLine = CCSpriteBatchNode::create("line.png", 2000);
 	_itemBatch = CCSpriteBatchNode::create("x.png", 2000);
 
 	_dataBoardGame = new CELL_VALUE*[GAME_MATRIX_SIZE];
@@ -119,11 +118,20 @@ void MainGame::onTouchMoved(Touch *touch, Event* event) {
 }
 
 void MainGame::onTouchEnded(Touch *touch, Event* event) {
-
+	Vec2 playerLastLocation;
 	if (!_isMoving) {
 		_touchBeganLocation = touch->getLocation();
-		markCellWith(_currentPlayer, touch->getLocationInView());
+		playerLastLocation = markCellWith(touch->getLocationInView());
+		
+			if (_gameMode == GAME_MODE::SINGLE) {
+				if (playerLastLocation != Vec2(-1, -1)) {
+					Vec2 loc = AIPlay(playerLastLocation);
+					markCellWith(loc.x, loc.y);
+				}
+			}
 	}
+
+	
 }
 
 /**
@@ -133,7 +141,7 @@ void MainGame::onTouchEnded(Touch *touch, Event* event) {
 *	Turn player
 *	Check win
 **/
-void MainGame::markCellWith(CELL_VALUE cellValue, Vec2 locationView) {
+Vec2 MainGame::markCellWith(Vec2 locationView) {
 	
 	auto absolutelyX = -_startLocationX + locationView.x;
 	auto absolutelyY = _startLocationY - (_visibleSize.height - locationView.y) + _lineHeight;
@@ -144,7 +152,41 @@ void MainGame::markCellWith(CELL_VALUE cellValue, Vec2 locationView) {
 	// Click at line
 	if (absolutelyX - tempX*GAME_CELL_SIZE < _lineHeight ||
 		absolutelyY - tempY*GAME_CELL_SIZE < _lineHeight)
-		return;
+		return Vec2(-1,-1);
+
+	// Out of board game
+	if (tempX < 0 || tempX >= GAME_MATRIX_SIZE || tempY < 0 || tempY >= GAME_MATRIX_SIZE)
+		return Vec2(-1, -1);
+	// Cell has already value
+	if (_dataBoardGame[tempY][tempX] != CELL_VALUE::UNSET)
+		return Vec2(-1, -1);
+	
+	if (_currentPlayer == CELL_VALUE::X) {
+		_itemMatrix[_itemMatrixCount] = cocos2d::Sprite::create("x.png");
+		_dataBoardGame[tempY][tempX] = CELL_VALUE::X;
+	}
+	else {
+		_itemMatrix[_itemMatrixCount] = cocos2d::Sprite::create("o.png");
+		_dataBoardGame[tempY][tempX] = CELL_VALUE::O;
+	}
+	checkWin(tempY, tempX);
+
+	_itemMatrix[_itemMatrixCount]->setPosition(tempX*(GAME_CELL_SIZE)+0.5*GAME_CELL_SIZE + _startLocationX,
+		_startLocationY - (tempY*(GAME_CELL_SIZE)+0.5*GAME_CELL_SIZE));
+	this->addChild(_itemMatrix[_itemMatrixCount]);
+	_itemMatrixCount++;
+
+	if (_currentPlayer == CELL_VALUE::X)
+		_currentPlayer = CELL_VALUE::O;
+	else _currentPlayer = CELL_VALUE::X;
+
+	return Vec2(tempX, tempY);
+}
+
+void MainGame::markCellWith(int locationBoardX, int locationBoardY) {
+
+	int tempX = locationBoardX;
+	int tempY = locationBoardY;
 
 	// Out of board game
 	if (tempX < 0 || tempX >= GAME_MATRIX_SIZE || tempY < 0 || tempY >= GAME_MATRIX_SIZE)
@@ -152,8 +194,8 @@ void MainGame::markCellWith(CELL_VALUE cellValue, Vec2 locationView) {
 	// Cell has already value
 	if (_dataBoardGame[tempY][tempX] != CELL_VALUE::UNSET)
 		return;
-	
-	if (cellValue == CELL_VALUE::X) {
+
+	if (_currentPlayer == CELL_VALUE::X) {
 		_itemMatrix[_itemMatrixCount] = cocos2d::Sprite::create("x.png");
 		_dataBoardGame[tempY][tempX] = CELL_VALUE::X;
 	}
@@ -258,4 +300,12 @@ bool MainGame::checkWin(int x, int y) {
 	}
 
 	return false;
+}
+
+
+//*******************************************************
+//IMPLEMENT AI
+//*******************************************************
+Vec2 MainGame::AIPlay(Vec2 playerLastLocation) {
+	return Vec2(playerLastLocation.x, playerLastLocation.y + 1);
 }

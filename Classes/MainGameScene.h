@@ -2,7 +2,7 @@
 #define __HELLOWORLD_SCENE_H__
 
 #include "cocos2d.h"
-#include "CellValue.h"
+#include "EnumValue.h"
 using namespace cocos2d;
 class MainGame : public cocos2d::Layer
 {
@@ -31,27 +31,35 @@ private:
 	CELL_VALUE _currentPlayer = CELL_VALUE::X;
 	bool _isMoving = false;
 
-	//Test
-	int _lineWidth = 660;
+	GAME_MODE _gameMode = GAME_MODE::SINGLE;
+
+	int _lineWidth = 506;
 	int _lineHeight = 5;
 
-	void markCellWith(CELL_VALUE cellValue, Vec2 locationView);
-	bool checkWin(int x, int y);
-public:
-    static cocos2d::Scene* createScene();
 
-    virtual bool init();
-    
-    // a selector callback
-    void menuCloseCallback(cocos2d::Ref* pSender);
-    
-    // implement the "static create()" method manually
-    CREATE_FUNC(MainGame);
+	//*********************************
+	/* FUNCTION                       */
+	//*********************************
+	Vec2 markCellWith(Vec2 locationView);
+	bool checkWin(int x, int y);
+	virtual bool init();
+	void menuCloseCallback(cocos2d::Ref* pSender);
+	CREATE_FUNC(MainGame);
 
 	// tounch event
 	virtual bool onTouchBegan(cocos2d::Touch *touch, cocos2d::Event* event);
 	virtual void onTouchMoved(cocos2d::Touch *touch, cocos2d::Event* event);
 	virtual void onTouchEnded(Touch *touch, Event* event);
+public:
+	static cocos2d::Scene* createScene();
+	/*
+	For playing turn of AI.
+	*	* cellValue: X or O
+	*	* locationBoardX: x in _matrix _dataBoardGame
+	*	* locationBoardY: y in _matrix_dataBoardGame
+	*/
+	void markCellWith(int locationBoardX, int locationBoardY);
+	Vec2 AIPlay(Vec2 playerLastLocation);
 };
 
 #endif // __HELLOWORLD_SCENE_H__
